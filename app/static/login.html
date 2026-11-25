@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ورود — تبدیل صدا به متن</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="login-body">
+<form class="card login-card" method="post" action="/login">
+  <h1>تبدیل صدا به متن</h1>
+  <p class="muted">برای ادامه رمز عبور را وارد کنید.</p>
+  <div id="login-error" class="alert error hidden"></div>
+  <label for="password">رمز عبور</label>
+  <input id="password" name="password" type="password" autocomplete="current-password" required autofocus>
+  <button type="submit" class="btn primary">ورود</button>
+</form>
+<script src="/static/app.js"></script>
+</body>
+</html>

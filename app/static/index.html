@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>تبدیل صدا به متن</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="topbar">
+  <h1>تبدیل صدا به متن</h1>
+  <nav>
+    <button class="tab active" data-tab="upload">تبدیل فایل</button>
+    <button class="tab" data-tab="settings">تنظیمات کلید API</button>
+    <form method="post" action="/logout" class="inline"><button class="btn ghost" type="submit">خروج</button></form>
+  </nav>
+</header>
+
+<main>
+  <div id="no-key" class="alert warn hidden">هنوز کلید API وارد نشده است. ابتدا از بخش «تنظیمات کلید API» کلید را وارد کنید.</div>
+
+  <section id="tab-upload" class="tab-panel">
+    <form id="upload-form" class="card">
+      <h2>فایل صوتی جدید</h2>
+      <label for="file">فایل صوتی (mp3، m4a، wav، ogg، webm، mp4 و ...)</label>
+      <input id="file" name="file" type="file" accept="audio/*,video/*,.ogg,.opus,.m4a,.amr" required>
+
+      <label for="model">مدل</label>
+      <select id="model" name="model"></select>
+
+      <details>
+        <summary>گزینه‌های بیشتر (اختیاری)</summary>
+        <label for="prompt">توضیح دربارهٔ موضوع صدا</label>
+        <input id="prompt" name="prompt" type="text" placeholder="مثلاً: جلسهٔ کاری دربارهٔ صورتحساب الکترونیکی و سامانهٔ مؤدیان">
+        <label for="keywords">کلمات کلیدی (با ویرگول جدا کنید)</label>
+        <input id="keywords" name="keywords" type="text" placeholder="مثلاً: کیسان، مؤدیان، سامانه جامع">
+      </details>
+
+      <div class="progress hidden" id="upload-progress"><div class="bar" id="upload-bar"></div></div>
+      <button type="submit" class="btn primary" id="upload-btn">شروع تبدیل</button>
+      <div id="upload-msg" class="alert hidden"></div>
+    </form>
+
+    <div class="card">
+      <h2>فایل‌ها</h2>
+      <div id="jobs" class="jobs"><p class="muted">هنوز فایلی ارسال نشده است.</p></div>
+    </div>
+
+    <div class="card hidden" id="result-card">
+      <div class="result-head">
+        <h2 id="result-title">متن</h2>
+        <div>
+          <button class="btn" id="copy-btn" type="button">کپی متن</button>
+          <a class="btn" id="download-btn" href="#">دانلود فایل متنی</a>
+        </div>
+      </div>
+      <textarea id="result-text" readonly></textarea>
+    </div>
+  </section>
+
+  <section id="tab-settings" class="tab-panel hidden">
+    <form id="settings-form" class="card">
+      <h2>کلید API پلتفرم OpenAI</h2>
+      <p class="muted">کلید فقط روی همین سرور ذخیره می‌شود و در گیت قرار نمی‌گیرد. وضعیت فعلی: <b id="key-status">—</b></p>
+      <label for="api_key">کلید جدید</label>
+      <input id="api_key" name="api_key" type="password" autocomplete="off" placeholder="sk-..." required>
+      <button type="submit" class="btn primary">ذخیرهٔ کلید</button>
+      <button type="button" class="btn" id="test-key-btn">آزمایش کلید</button>
+      <div id="settings-msg" class="alert hidden"></div>
+    </form>
+  </section>
+</main>
+<script src="/static/app.js"></script>
+</body>
+</html>
