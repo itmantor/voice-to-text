@@ -1,0 +1,44 @@
+# تبدیل صدا به متن (Voice to Text)
+
+یک وب‌اپ ساده که فایل صوتی را با API پلتفرم OpenAI به متن فارسی تبدیل می‌کند.
+
+- ورود با رمز عبور
+- وارد کردن کلید API بعد از ورود (کلید فقط روی سرور ذخیره می‌شود، نه در گیت)
+- پشتیبانی از mp3، m4a، wav، ogg، webm، mp4 و ...، تا ۵۰۰ مگابایت
+- فایل‌های طولانی خودکار به تکه‌های ۱۰ دقیقه‌ای تقسیم می‌شوند (محدودیت ۲۵ مگابایتی OpenAI)
+- مدل پیش‌فرض: `gpt-transcribe`
+
+## نصب روی سرور (Ubuntu)
+
+```bash
+sudo git clone https://github.com/<USERNAME>/voice-to-text.git /opt/voice-to-text
+cd /opt/voice-to-text
+sudo APP_PASSWORD='رمز-دلخواه' bash install.sh
+```
+
+بعد از نصب، آدرس `http://IP-سرور:8095` را باز کنید، وارد شوید و از «تنظیمات کلید API» کلید را وارد کنید.
+
+برای پورت دیگر: `sudo PORT=8096 bash install.sh`
+
+## به‌روزرسانی
+
+```bash
+cd /opt/voice-to-text
+sudo git pull
+sudo bash install.sh
+```
+
+## دستورهای مفید
+
+| کار | دستور |
+| --- | --- |
+| وضعیت سرویس | `sudo systemctl status voice-to-text` |
+| دیدن لاگ‌ها | `sudo journalctl -u voice-to-text -n 50` |
+| ری‌استارت | `sudo systemctl restart voice-to-text` |
+| تغییر رمز | `sudo APP_PASSWORD='رمز-جدید' bash install.sh` |
+
+## نکته‌ها
+
+- رمز عبور در `/etc/voice-to-text.env` و کلید API و متن‌ها در `/var/lib/voice-to-text` نگهداری می‌شوند؛ هیچ‌کدام در گیت نیستند.
+- OpenAI به سرورهای داخل ایران سرویس نمی‌دهد؛ سرور باید در منطقهٔ پشتیبانی‌شده باشد.
+- در حالت تست (http با IP) ارتباط رمزنگاری نشده است. برای استفادهٔ واقعی دامنه و HTTPS اضافه کنید.
