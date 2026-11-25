@@ -3,61 +3,99 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>تبدیل صدا به متن</title>
+<title>تبدیل صدا به متن و ارزیابی تماس</title>
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
 <header class="topbar">
-  <h1>تبدیل صدا به متن</h1>
+  <h1>تبدیل صدا به متن و ارزیابی تماس</h1>
   <nav>
-    <button class="tab active" data-tab="upload">تبدیل فایل</button>
-    <button class="tab" data-tab="settings">تنظیمات کلید API</button>
+    <button class="tab active" data-tab="upload">تماس‌ها</button>
+    <button class="tab" data-tab="settings">تنظیمات</button>
     <form method="post" action="/logout" class="inline"><button class="btn ghost" type="submit">خروج</button></form>
   </nav>
 </header>
 
 <main>
-  <div id="no-key" class="alert warn hidden">هنوز کلید API وارد نشده است. ابتدا از بخش «تنظیمات کلید API» کلید را وارد کنید.</div>
+  <div id="no-key" class="alert warn hidden">هنوز کلید API وارد نشده است. ابتدا از بخش «تنظیمات» کلید را وارد کنید.</div>
 
+  <!-- ======================= تماس‌ها ======================= -->
   <section id="tab-upload" class="tab-panel">
     <form id="upload-form" class="card">
-      <h2>فایل صوتی جدید</h2>
-      <label for="file">فایل صوتی (mp3، m4a، wav، ogg، webm، mp4 و ...)</label>
-      <input id="file" name="file" type="file" accept="audio/*,video/*,.ogg,.opus,.m4a,.amr" required>
+      <h2>بارگذاری تماس</h2>
+      <label for="file">فایل‌های صوتی (می‌توانید چند فایل را با هم انتخاب کنید)</label>
+      <input id="file" name="file" type="file" multiple accept="audio/*,video/*,.ogg,.opus,.m4a,.amr,.wav,.mp3" required>
 
-      <label for="model">مدل</label>
+      <label for="model">مدل تبدیل گفتار</label>
       <select id="model" name="model"></select>
+      <p class="hint">برای تماس‌های مرکز تماس، گزینهٔ «تفکیک گوینده» اپراتور و مشتری را جدا نشان می‌دهد و ارزیابی دقیق‌تری می‌دهد.</p>
+
+      <label class="check"><input type="checkbox" id="evaluate" name="evaluate" value="1"> ارزیابی با استانداردهای پاسخگویی و امتیازدهی</label>
+      <p class="hint" id="eval-hint"></p>
 
       <details>
         <summary>گزینه‌های بیشتر (اختیاری)</summary>
-        <label for="prompt">توضیح دربارهٔ موضوع صدا</label>
-        <input id="prompt" name="prompt" type="text" placeholder="مثلاً: جلسهٔ کاری دربارهٔ صورتحساب الکترونیکی و سامانهٔ مؤدیان">
+        <label for="prompt">توضیح دربارهٔ موضوع تماس‌ها</label>
+        <input id="prompt" name="prompt" type="text" placeholder="مثلاً: تماس مشتریان با پشتیبانی کیسان دربارهٔ صورتحساب الکترونیکی">
         <label for="keywords">کلمات کلیدی (با ویرگول جدا کنید)</label>
         <input id="keywords" name="keywords" type="text" placeholder="مثلاً: کیسان، مؤدیان، سامانه جامع">
       </details>
 
       <div class="progress hidden" id="upload-progress"><div class="bar" id="upload-bar"></div></div>
-      <button type="submit" class="btn primary" id="upload-btn">شروع تبدیل</button>
+      <button type="submit" class="btn primary" id="upload-btn">شروع</button>
       <div id="upload-msg" class="alert hidden"></div>
     </form>
 
     <div class="card">
-      <h2>فایل‌ها</h2>
+      <h2>تماس‌ها</h2>
       <div id="jobs" class="jobs"><p class="muted">هنوز فایلی ارسال نشده است.</p></div>
     </div>
 
     <div class="card hidden" id="result-card">
       <div class="result-head">
-        <h2 id="result-title">متن</h2>
-        <div>
-          <button class="btn" id="copy-btn" type="button">کپی متن</button>
-          <a class="btn" id="download-btn" href="#">دانلود فایل متنی</a>
+        <h2 id="result-title">نتیجه</h2>
+        <div class="row-btns">
+          <button class="btn" id="reeval-btn" type="button">ارزیابی دوباره</button>
+          <a class="btn" id="download-btn" href="#">دانلود گزارش</a>
         </div>
       </div>
+
+      <div id="eval-box" class="hidden">
+        <div class="score-row">
+          <div class="score" id="ev-score">—</div>
+          <div>
+            <div class="verdict" id="ev-verdict"></div>
+            <div class="muted small" id="ev-meta"></div>
+          </div>
+        </div>
+        <div id="ev-changed" class="alert warn hidden">فایل استانداردها بعد از این ارزیابی تغییر کرده است. برای ارزیابی با نسخهٔ جدید، «ارزیابی دوباره» را بزنید.</div>
+        <p id="ev-summary"></p>
+        <p><b>خلاصهٔ تماس: </b><span id="ev-call"></span></p>
+        <p><b>گوینده‌ها: </b><span id="ev-speakers"></span></p>
+
+        <h3>معیارها</h3>
+        <div class="table-wrap">
+          <table class="criteria">
+            <thead><tr><th>#</th><th>معیار</th><th>وضعیت</th><th>توضیح و شاهد از متن</th></tr></thead>
+            <tbody id="ev-criteria"></tbody>
+          </table>
+        </div>
+
+        <div class="lists">
+          <div><h3>موارد رعایت‌نشده</h3><ul id="ev-violations"></ul></div>
+          <div><h3>نقاط قوت</h3><ul id="ev-strengths"></ul></div>
+          <div><h3>پیشنهادهای بهبود</h3><ul id="ev-recs"></ul></div>
+        </div>
+      </div>
+      <div id="eval-status" class="alert hidden"></div>
+
+      <h3>متن تماس</h3>
+      <div class="row-btns"><button class="btn small" id="copy-btn" type="button">کپی متن</button></div>
       <textarea id="result-text" readonly></textarea>
     </div>
   </section>
 
+  <!-- ======================= تنظیمات ======================= -->
   <section id="tab-settings" class="tab-panel hidden">
     <form id="settings-form" class="card">
       <h2>کلید API پلتفرم OpenAI</h2>
@@ -67,6 +105,36 @@
       <button type="submit" class="btn primary">ذخیرهٔ کلید</button>
       <button type="button" class="btn" id="test-key-btn">آزمایش کلید</button>
       <div id="settings-msg" class="alert hidden"></div>
+    </form>
+
+    <div class="card">
+      <h2>استانداردهای پاسخگویی تماس</h2>
+      <p class="muted">دستورالعمل پاسخگویی مرکز تماس را بارگذاری کنید (Word با پسوند docx، PDF متنی، یا txt). هر تماس با همین سند مقایسه و امتیازدهی می‌شود.</p>
+      <p>فایل فعلی: <b id="std-status">—</b></p>
+      <form id="std-form">
+        <input id="std-file" name="file" type="file" accept=".docx,.pdf,.txt,.md" required>
+        <button type="submit" class="btn primary">بارگذاری فایل استانداردها</button>
+      </form>
+      <details id="std-details">
+        <summary>مشاهده و ویرایش متن استانداردها</summary>
+        <p class="hint">متن استخراج‌شده از فایل را اینجا ببینید و در صورت نیاز اصلاح کنید (مثلاً اگر جدول‌ها درست خوانده نشده‌اند).</p>
+        <textarea id="std-text"></textarea>
+        <button type="button" class="btn" id="std-save-btn">ذخیرهٔ تغییرات متن</button>
+        <button type="button" class="btn danger" id="std-del-btn">حذف استانداردها</button>
+      </details>
+      <div id="std-msg" class="alert hidden"></div>
+    </div>
+
+    <form id="evalmodel-form" class="card">
+      <h2>مدل ارزیابی</h2>
+      <p class="muted">مدلی که متن تماس را با استانداردها مقایسه می‌کند. اگر خالی بماند، بهترین مدل موجود در حساب شما خودکار انتخاب می‌شود.</p>
+      <label for="eval_model">نام مدل</label>
+      <input id="eval_model" name="eval_model" type="text" list="eval-model-list" placeholder="خودکار" dir="ltr">
+      <datalist id="eval-model-list"></datalist>
+      <p class="hint" id="eval-auto"></p>
+      <button type="submit" class="btn primary">ذخیره</button>
+      <button type="button" class="btn" id="load-models-btn">نمایش مدل‌های در دسترس</button>
+      <div id="evalmodel-msg" class="alert hidden"></div>
     </form>
   </section>
 </main>
