@@ -173,6 +173,7 @@
       fd.append("prompt", form.prompt.value);
       fd.append("keywords", form.keywords.value);
       if (form.evaluate.checked) fd.append("evaluate", "1");
+      if (form.analyze.checked) fd.append("analyze", "1");
       const xhr = new XMLHttpRequest();
       xhr.open("POST", "/api/jobs");
       xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress(e.loaded / e.total); };
@@ -214,8 +215,12 @@
   let pollTimer = null;
   let openId = null;
 
+  const isBusy = (j) => j.status === "queued" || j.status === "processing" || ["queued", "running"].includes(j.eval_status) || ["queued", "running"].includes(j.analysis_status);
+
   function jobStatusText(j) {
     if (j.status !== "done") return statusLabel[j.status] + " — " + (j.step || "");
+    if (j.analysis_status === "queued" || j.analysis_status === "running") return "متن آماده — " + (j.analysis_step || "در حال تحلیل...");
+    if (j.analysis_status === "error") return "متن آماده — تحلیل ناموفق: " + (j.analysis_step || "");
     if (j.eval_status === "queued" || j.eval_status === "running") return "متن آماده — " + (j.eval_step || "در حال ارزیابی...");
     if (j.eval_status === "error") return "متن آماده — ارزیابی ناموفق: " + (j.eval_step || "");
     return "آماده";
@@ -232,8 +237,8 @@
       const row = el("div", "job");
       const info = el("div", "info");
       info.appendChild(el("div", "name", j.filename));
-      const busy = j.status === "queued" || j.status === "processing" || j.eval_status === "queued" || j.eval_status === "running";
-      const cls = j.status === "error" || j.eval_status === "error" ? "status-error" : busy ? "status-processing" : "status-done";
+      const busy = isBusy(j);
+      const cls = j.status === "error" || j.eval_status === "error" || j.analysis_status === "error" ? "status-error" : busy ? "status-processing" : "status-done";
       info.appendChild(el("div", "step " + cls, jobStatusText(j)));
       info.appendChild(el("div", "muted step", sizeText(j.size) + " · " + j.model + " · " + dateText(j.created)));
 
@@ -261,10 +266,11 @@
       row.append(info, actions);
       box.appendChild(row);
     });
-    const anyBusy = jobs.some((j) => j.status === "queued" || j.status === "processing" || j.eval_status === "queued" || j.eval_status === "running");
+    const anyBusy = jobs.some(isBusy);
     if (openId) {
       const cur = jobs.find((x) => x.id === openId);
-      if (cur && cur.eval_status !== $("result-card").dataset.evalStatus) openResult(openId, true);
+      const card = $("result-card");
+      if (cur && (cur.eval_status !== card.dataset.evalStatus || cur.analysis_status !== card.dataset.anStatus)) openResult(openId, true);
     }
     pollTimer = setTimeout(refreshJobs, anyBusy ? 3000 : 20000);
   }
@@ -279,12 +285,18 @@
     openId = id;
     const card = $("result-card");
     card.dataset.evalStatus = j.eval_status || "";
+    card.dataset.anStatus = j.analysis_status || "";
+    $("docx-btn").href = "/api/jobs/" + id + "/report.docx";
+    renderAnalysis(j);
     $("result-title").textContent = j.filename;
     $("result-text").value = j.text || "(متنی تشخیص داده نشد)";
     $("download-btn").href = "/api/jobs/" + id + "/download";
-    $("download-btn").textContent = j.evaluation ? "دانلود گزارش ارزیابی" : "دانلود متن";
+    $("download-btn").textContent = "دانلود متن";
+    $("raw-details").open = !j.analysis;
 
-    const busy = j.eval_status === "queued" || j.eval_status === "running";
+    const busy = isBusy(j);
+    $("reanalyze-btn").textContent = j.analysis ? "تحلیل دوباره" : "تهیهٔ گزارش تحلیلی";
+    $("reanalyze-btn").disabled = busy;
     $("reeval-btn").textContent = j.evaluation ? "ارزیابی دوباره" : "ارزیابی با استانداردها";
     $("reeval-btn").disabled = busy || !hasStandards;
 
@@ -328,6 +340,56 @@
     card.classList.remove("hidden");
     if (!quiet) card.scrollIntoView({ behavior: "smooth" });
   }
+
+  function renderAnalysis(j) {
+    const st = $("analysis-status");
+    if (j.analysis_status === "queued" || j.analysis_status === "running") show(st, j.analysis_step || "در حال تحلیل...", "");
+    else if (j.analysis_status === "error") show(st, "تحلیل ناموفق بود: " + j.analysis_step, "error");
+    else st.classList.add("hidden");
+    const an = j.analysis;
+    $("analysis-box").classList.toggle("hidden", !an);
+    if (!an) return;
+    $("an-title").textContent = an.report_title || "";
+    const tr = $("an-transcript"); tr.innerHTML = "";
+    (an.transcript || []).forEach((t) => {
+      const p = el("p", "turn");
+      const roleCls = t.speaker === "کارشناس" ? "role-agent" : t.speaker === "مشتری" ? "role-customer" : "role-na";
+      p.appendChild(el("b", roleCls, t.speaker + ": "));
+      p.appendChild(document.createTextNode(t.text));
+      tr.appendChild(p);
+    });
+    const mi = an.main_issue || {};
+    $("an-topic").textContent = mi.topic || "—";
+    $("an-desc").textContent = mi.description || "—";
+    $("an-question").textContent = mi.customer_question || "—";
+    const sol = an.solution || {};
+    $("an-sol-summary").textContent = sol.summary || "";
+    const mb = $("an-methods"); mb.innerHTML = "";
+    (sol.methods || []).forEach((m, i) => {
+      const row = el("tr");
+      row.appendChild(el("td", "method", fa(i + 1) + ". " + m.method));
+      row.appendChild(el("td", "", m.details));
+      mb.appendChild(row);
+    });
+    $("an-methods-table").classList.toggle("hidden", !(sol.methods || []).length);
+    const se = an.sentiment || {}; const ul = $("an-sentiment"); ul.innerHTML = "";
+    [["start", "ابتدای تماس"], ["middle", "میانه تماس"], ["end", "پایان تماس"]].forEach(([k, label]) => {
+      const part = se[k] || {};
+      const li = el("li");
+      li.appendChild(el("b", "", label + (part.label ? " (" + part.label + ")" : "") + ": "));
+      li.appendChild(document.createTextNode(part.description || "—"));
+      ul.appendChild(li);
+    });
+  }
+
+  $("reanalyze-btn").addEventListener("click", async () => {
+    if (!openId) return;
+    try {
+      await api("/api/jobs/" + openId + "/analyze", { method: "POST" });
+      await openResult(openId, true);
+      refreshJobs();
+    } catch (e) { show($("analysis-status"), e.message, "error"); }
+  });
 
   $("reeval-btn").addEventListener("click", async () => {
     if (!openId) return;

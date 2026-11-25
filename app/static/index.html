@@ -30,6 +30,7 @@
       <select id="model" name="model"></select>
       <p class="hint">برای تماس‌های مرکز تماس، گزینهٔ «تفکیک گوینده» اپراتور و مشتری را جدا نشان می‌دهد و ارزیابی دقیق‌تری می‌دهد.</p>
 
+      <label class="check"><input type="checkbox" id="analyze" name="analyze" value="1" checked> گزارش تحلیلی تماس (تفکیک کارشناس و مشتری، مشکل، راه‌حل، احساسات مشتری) — خروجی Word</label>
       <label class="check"><input type="checkbox" id="evaluate" name="evaluate" value="1"> ارزیابی با استانداردهای پاسخگویی و امتیازدهی</label>
       <p class="hint" id="eval-hint"></p>
 
@@ -55,12 +56,38 @@
       <div class="result-head">
         <h2 id="result-title">نتیجه</h2>
         <div class="row-btns">
+          <a class="btn primary" id="docx-btn" href="#">دانلود گزارش Word</a>
+          <a class="btn" id="download-btn" href="#">دانلود متن</a>
+          <button class="btn" id="reanalyze-btn" type="button">تحلیل دوباره</button>
           <button class="btn" id="reeval-btn" type="button">ارزیابی دوباره</button>
-          <a class="btn" id="download-btn" href="#">دانلود گزارش</a>
         </div>
       </div>
 
+      <div id="analysis-status" class="alert hidden"></div>
+      <div id="analysis-box" class="hidden">
+        <h3 id="an-title" class="report-title"></h3>
+        <h3>۱. متن کامل تماس و تفکیک گویندگان</h3>
+        <div id="an-transcript" class="transcript"></div>
+        <h3>۲. مشکل یا درخواست اصلی مشتری</h3>
+        <ul class="plain">
+          <li><b>موضوع اصلی: </b><span id="an-topic"></span></li>
+          <li><b>شرح مشکل: </b><span id="an-desc"></span></li>
+          <li><b>سؤال مشتری: </b><span id="an-question"></span></li>
+        </ul>
+        <h3>۳. راه حل ارائه شده توسط کارشناس</h3>
+        <p id="an-sol-summary"></p>
+        <div class="table-wrap">
+          <table class="criteria methods" id="an-methods-table">
+            <thead><tr><th>روش / راهکار</th><th>شرح نحوه اجرا و نتیجه</th></tr></thead>
+            <tbody id="an-methods"></tbody>
+          </table>
+        </div>
+        <h3>۴. تحلیل احساسات مشتری</h3>
+        <ul class="plain" id="an-sentiment"></ul>
+      </div>
+
       <div id="eval-box" class="hidden">
+        <h3>ارزیابی انطباق با استانداردهای پاسخگویی</h3>
         <div class="score-row">
           <div class="score" id="ev-score">—</div>
           <div>
@@ -89,9 +116,11 @@
       </div>
       <div id="eval-status" class="alert hidden"></div>
 
-      <h3>متن تماس</h3>
-      <div class="row-btns"><button class="btn small" id="copy-btn" type="button">کپی متن</button></div>
-      <textarea id="result-text" readonly></textarea>
+      <details id="raw-details">
+        <summary>متن خام تماس (خروجی مستقیم تبدیل گفتار)</summary>
+        <div class="row-btns"><button class="btn small" id="copy-btn" type="button">کپی متن</button></div>
+        <textarea id="result-text" readonly></textarea>
+      </details>
     </div>
   </section>
 
